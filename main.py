@@ -1,7 +1,7 @@
-import base64
-import io
 import os
+import io
 import torch
+import base64
 import uvicorn
 
 from fastapi import FastAPI
@@ -14,7 +14,7 @@ from transformers import AutoModel
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 model = AutoModel.from_pretrained(
-    os.getenv("MODEL", "jinaai/jina-clip-v1"),
+    os.getenv("MODEL", "jinaai/jina-embeddings-v3"),
     torch_dtype="auto",
     trust_remote_code=True,
 ).to(device)
@@ -53,32 +53,45 @@ class EmbeddingRequest(BaseModel):
 
 @app.post("/embeddings")
 @app.post("/v1/embeddings")
-async def rerank(request: EmbeddingRequest):
+async def embed(request: EmbeddingRequest):
     input = request.input
 
     data = []
     
     for i, input in enumerate(input):
         if input.text:
-            embedding = model.encode_text(input.text)
+            encode = getattr(model, "encode_text", None)
+            
+            if encode == None:
+                encode = getattr(model, "encode", None)
+                
+            if encode == None:
+                raise ValueError('Model does not have a method to encode text')
+            
+            embedding = encode(input.text)
 
             data.append({
                 "object": "embedding",
                 "index": i,
                 "embedding": embedding.tolist()
             })
-        
+            
         if input.image:
+            encode = getattr(model, "encode_image", None)
+            
+            if encode == None:
+                raise ValueError('Model does not have a method to encode image')
+            
             if input.image.startswith("http://") or input.image.startswith("https://"):
-                embedding = model.encode_image(input.image)
+                embedding = encode(input.image)
             else:
                 image_data = base64.b64decode(input.image)
 
                 image = Image.open(io.BytesIO(image_data))
                 image = image.convert("RGB")
 
-                embedding = model.encode_image(image)
-
+                embedding = encode(image)
+            
             data.append({
                 "object": "embedding",
                 "index": i,
@@ -90,7 +103,6 @@ async def rerank(request: EmbeddingRequest):
         "model": model.name_or_path,
         "data": data
     }
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

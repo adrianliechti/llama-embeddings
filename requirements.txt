@@ -1,5 +1,6 @@
 einops
 fastapi
+numpy<2
 pillow
 timm
 transformers[torch]
