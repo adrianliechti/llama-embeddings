@@ -2,19 +2,11 @@
 
 A simple FastAPI/Transformers Embeddings implementation mimics the [Jina AI Embeddings API](https://jina.ai/embeddings).
 
-Defaults to [jinaai/jina-embeddings-v3](https://huggingface.co/jinaai/jina-embeddings-v3). Can be overwritten using `MODEL` environment variable.
-
 ```bash
-# Using Embeddings Model
-docker run -it --rm -p 8000:8000 -e MODEL=jinaai/jina-embeddings-v3 ghcr.io/adrianliechti/llama-embeddings
-
-# Using CLIP Model
-docker run -it --rm -p 8000:8000 -e MODEL=jinaai/jina-clip-v1 ghcr.io/adrianliechti/llama-embeddings
+docker run -it --rm -p 8000:8000 ghcr.io/adrianliechti/llama-embeddings
 ```
 
 ## Text Embeddings
-
-Using [jinaai/jina-embeddings-v3](https://huggingface.co/jinaai/jina-embeddings-v3)
 
 ```bash
 curl http://localhost:8000/v1/embeddings \
@@ -31,7 +23,7 @@ curl http://localhost:8000/v1/embeddings \
 ```json
 {
     "object": "list",
-    "model": "jinaai/jina-embeddings-v3",
+    "model": "default",
     "data": [
         {
             "object": "embedding",
@@ -66,8 +58,6 @@ curl http://localhost:8000/v1/embeddings \
 
 ## Mixed Embeddings
 
-Using [jinaai/jina-clip-v1](https://huggingface.co/jinaai/jina-clip-v1)
-
 ```bash
 curl http://localhost:8000/v1/embeddings \
   -H "Content-Type: application/json" \
@@ -85,7 +75,7 @@ curl http://localhost:8000/v1/embeddings \
 ```json
 {
     "object": "list",
-    "model": "jinaai/jina-clip-v1",
+    "model": "default",
     "data": [
         {
             "object": "embedding",

@@ -1,25 +1,17 @@
-import os
 import io
-import torch
 import base64
+import requests
 import uvicorn
 
 from fastapi import FastAPI
-from pydantic import BaseModel, field_validator
 from typing import List, Optional
+from pydantic import BaseModel, field_validator
 
 from PIL import Image
-from transformers import AutoModel
+from fastembed import ImageEmbedding, TextEmbedding
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-model = AutoModel.from_pretrained(
-    os.getenv("MODEL", "jinaai/jina-embeddings-v3"),
-    torch_dtype="auto",
-    trust_remote_code=True,
-).to(device)
-
-model.eval()
+text_embedding = TextEmbedding(model_name="intfloat/multilingual-e5-large")
+image_embedding = ImageEmbedding(model_name="Qdrant/clip-ViT-B-32-vision")
 
 app = FastAPI(
     title="LLM Platform Embeddings"
@@ -54,53 +46,46 @@ class EmbeddingRequest(BaseModel):
 @app.post("/embeddings")
 @app.post("/v1/embeddings")
 async def embed(request: EmbeddingRequest):
-    input = request.input
-
     data = []
     
-    for i, input in enumerate(input):
+    for i, input in enumerate(request.input):
         if input.text:
-            encode = getattr(model, "encode_text", None)
-            
-            if encode == None:
-                encode = getattr(model, "encode", None)
-                
-            if encode == None:
-                raise ValueError('Model does not have a method to encode text')
-            
-            embedding = encode(input.text)
+            result = list(text_embedding.embed(input.text))
+            embedding = result[0].tolist()
 
             data.append({
                 "object": "embedding",
                 "index": i,
-                "embedding": embedding.tolist()
+                "embedding": embedding,
             })
             
         if input.image:
-            encode = getattr(model, "encode_image", None)
-            
-            if encode == None:
-                raise ValueError('Model does not have a method to encode image')
-            
             if input.image.startswith("http://") or input.image.startswith("https://"):
-                embedding = encode(input.image)
+               response = requests.get(input.image)
+               response.raise_for_status()
+
+               image = Image.open(io.BytesIO(response.content))
+               image = image.convert("RGB")
+               
             else:
                 image_data = base64.b64decode(input.image)
 
                 image = Image.open(io.BytesIO(image_data))
                 image = image.convert("RGB")
 
-                embedding = encode(image)
+            
+            result = list(image_embedding.embed(image))
+            embedding = result[0].tolist()
             
             data.append({
                 "object": "embedding",
                 "index": i,
-                "embedding": embedding.tolist()
+                "embedding": embedding
             })
     
     return {
         "object": "list",
-        "model": model.name_or_path,
+        "model": "default",
         "data": data
     }
 

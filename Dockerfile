@@ -7,6 +7,8 @@ ENV HF_HUB_VERBOSITY=error
 ENV HF_HUB_DISABLE_TELEMETRY=1
 ENV HF_HUB_DISABLE_PROGRESS_BARS=1
 
+ENV FASTEMBED_CACHE_PATH=/app/.cache/fastembed
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 

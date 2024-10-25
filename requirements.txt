@@ -1,7 +1,4 @@
-einops
 fastapi
-numpy<2
+fastembed
 pillow
-timm
-transformers[torch]
 uvicorn

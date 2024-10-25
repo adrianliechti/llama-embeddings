@@ -3,7 +3,7 @@
 version: "3"
 
 vars:
-  REPOSITORY: ghcr.io/adrianliechti/llama-embeddings
+  REPOSITORY: ghcr.io/adrianliechti/llama-embeddings:nightly
 
 tasks:
   run:
@@ -12,4 +12,4 @@ tasks:
 
   publish:
     cmds:
-      - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}:latest
+      - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}
